@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf, Mail, MapPin } from "lucide-react";
 
 import {
-  hasLeadFormData,
   INITIAL_LEAD_FORM,
   QUIZ_LEAD_RESULT_SUBMITTED_KEY,
-  QUIZ_LEAD_STORAGE_KEY,
 } from "@/lib/lead-form";
 import { calculateQuizResult, QUESTIONS, type AnswerId, serializeAnswers } from "@/lib/quiz";
 
@@ -26,10 +24,8 @@ export function QuizShell() {
   const [leadFormState, setLeadFormState] = useState<"idle" | "submitting" | "error">("idle");
   const [leadFormMessage, setLeadFormMessage] = useState("");
 
-  const storedLead = useSyncExternalStore(subscribeToLeadStore, readStoredLead, () => null);
-  const activeLeadForm = hasLeadFormData(leadForm) ? leadForm : storedLead ?? INITIAL_LEAD_FORM;
-  const hasStoredLead = Boolean(storedLead);
-  const quizStarted = hasStarted || hasStoredLead;
+  const activeLeadForm = leadForm;
+  const quizStarted = hasStarted;
 
   const currentQuestion = QUESTIONS[currentIndex];
   const selectedAnswer = answers[currentIndex];
@@ -119,7 +115,6 @@ export function QuizShell() {
         throw new Error(payload.error ?? "We couldn’t save your information just now.");
       }
 
-      window.sessionStorage.setItem(QUIZ_LEAD_STORAGE_KEY, JSON.stringify(activeLeadForm));
       window.sessionStorage.removeItem(QUIZ_LEAD_RESULT_SUBMITTED_KEY);
       setHasStarted(true);
       setLeadFormState("idle");
@@ -326,27 +321,4 @@ export function QuizShell() {
       </div>
     </div>
   );
-}
-
-function readStoredLead() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const storedLead = window.sessionStorage.getItem(QUIZ_LEAD_STORAGE_KEY);
-
-  if (!storedLead) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedLead) as typeof INITIAL_LEAD_FORM;
-  } catch {
-    window.sessionStorage.removeItem(QUIZ_LEAD_STORAGE_KEY);
-    return null;
-  }
-}
-
-function subscribeToLeadStore() {
-  return () => {};
 }

@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Copy, Download, Mail, MapPin, Share2, Sparkles, Star } from "lucide-react";
 import { toPng } from "html-to-image";
 
 import {
-  hasLeadFormData,
   INITIAL_LEAD_FORM,
   QUIZ_LEAD_RESULT_SUBMITTED_KEY,
-  QUIZ_LEAD_STORAGE_KEY,
   type QuizLeadFormState,
 } from "@/lib/lead-form";
 import { calculateQuizResult, deserializeAnswers } from "@/lib/quiz";
@@ -25,9 +23,10 @@ export function ResultsView() {
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [formMessage, setFormMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const storedLead = useSyncExternalStore(subscribeToLeadStore, readStoredLead, () => null);
-  const activeForm = hasLeadFormData(form) ? form : storedLead ?? INITIAL_LEAD_FORM;
-  const alreadySubmitted = useSyncExternalStore(subscribeToLeadStore, readSubmittedFlag, () => false);
+  const [alreadySubmitted] = useState(() =>
+    typeof window !== "undefined" &&
+    window.sessionStorage.getItem(QUIZ_LEAD_RESULT_SUBMITTED_KEY) === "true"
+  );
 
   async function handleDownloadCard() {
     if (!cardRef.current || !result) {
@@ -153,7 +152,7 @@ export function ResultsView() {
 
   async function handleLeadSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await submitLead(activeForm);
+    await submitLead(form);
   }
 
   if (!result) {
@@ -318,8 +317,10 @@ export function ResultsView() {
                   <span className="text-sm font-medium text-[#264e45]">Parent first name</span>
                   <input
                     required
-                    value={activeForm.parentFirstName}
-                    onChange={(event) => setForm({ ...activeForm, parentFirstName: event.target.value })}
+                    value={form.parentFirstName}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, parentFirstName: event.target.value }))
+                    }
                     className="min-h-12 w-full rounded-2xl border border-[#dfd2bb] bg-white px-4 text-base outline-none transition focus:border-[#35544b] focus:ring-4 focus:ring-[#35544b]/10"
                   />
                 </label>
@@ -328,8 +329,8 @@ export function ResultsView() {
                   <input
                     required
                     type="email"
-                    value={activeForm.email}
-                    onChange={(event) => setForm({ ...activeForm, email: event.target.value })}
+                    value={form.email}
+                    onChange={(event) => setForm((previous) => ({ ...previous, email: event.target.value }))}
                     className="min-h-12 w-full rounded-2xl border border-[#dfd2bb] bg-white px-4 text-base outline-none transition focus:border-[#35544b] focus:ring-4 focus:ring-[#35544b]/10"
                   />
                 </label>
@@ -337,8 +338,10 @@ export function ResultsView() {
                   <span className="text-sm font-medium text-[#264e45]">Child’s age</span>
                   <input
                     required
-                    value={activeForm.childAge}
-                    onChange={(event) => setForm({ ...activeForm, childAge: event.target.value })}
+                    value={form.childAge}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, childAge: event.target.value }))
+                    }
                     className="min-h-12 w-full rounded-2xl border border-[#dfd2bb] bg-white px-4 text-base outline-none transition focus:border-[#35544b] focus:ring-4 focus:ring-[#35544b]/10"
                     placeholder="For example: 4"
                   />
@@ -348,8 +351,8 @@ export function ResultsView() {
                   <div className="relative">
                     <MapPin className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#b08b4f]" />
                     <input
-                      value={activeForm.city}
-                      onChange={(event) => setForm({ ...activeForm, city: event.target.value })}
+                      value={form.city}
+                      onChange={(event) => setForm((previous) => ({ ...previous, city: event.target.value }))}
                       className="min-h-12 w-full rounded-2xl border border-[#dfd2bb] bg-white pl-11 pr-4 text-base outline-none transition focus:border-[#35544b] focus:ring-4 focus:ring-[#35544b]/10"
                     />
                   </div>
@@ -465,35 +468,4 @@ export function ResultsView() {
       </div>
     </div>
   );
-}
-
-function readStoredLead() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const storedLead = window.sessionStorage.getItem(QUIZ_LEAD_STORAGE_KEY);
-
-  if (!storedLead) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedLead) as QuizLeadFormState;
-  } catch {
-    window.sessionStorage.removeItem(QUIZ_LEAD_STORAGE_KEY);
-    return null;
-  }
-}
-
-function readSubmittedFlag() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return window.sessionStorage.getItem(QUIZ_LEAD_RESULT_SUBMITTED_KEY) === "true";
-}
-
-function subscribeToLeadStore() {
-  return () => {};
 }
