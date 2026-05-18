@@ -17,7 +17,7 @@ A mobile-first Next.js quiz app for Kingdom West Montessori.
 - Score + tag-based learner archetype logic
 - Personalized results page
 - Dynamic classroom guidance
-- Chicagoland lead capture form
+- Pre-quiz lead capture gate
 - Supabase-ready API route
 - Resend-ready lead notification hook
 - Shareable result card with download/share/copy actions
